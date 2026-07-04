@@ -1,0 +1,1553 @@
+{
+  "name": "agente_V05_añadir_RAG",
+  "nodes": [
+    {
+      "parameters": {
+        "updates": [
+          "message"
+        ],
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        -3424,
+        704
+      ],
+      "id": "2fbce3bb-5e2e-4e11-8898-5d4980f6fe20",
+      "name": "Telegram Trigger",
+      "webhookId": "9ed8b0e5-6862-451c-8337-4ca47affae99",
+      "credentials": {
+        "telegramApi": {
+          "id": "fXARzggL5OraQ4Kd",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "52704b79-bfa9-4da7-9754-815d304a36f3",
+              "name": "message.text",
+              "value": "={{ $json.message.text }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -3200,
+        704
+      ],
+      "id": "75070a76-c141-4a7d-93de-28d34d75ecfb",
+      "name": "Edit Fields 1"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.message.text }}",
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "=# ROL Y CONTEXTO\nEres el asistente de IA central de una clínica dental. Tu trabajo es procesar el mensaje entrante del usuario, clasificar su intención para el sistema y generar una respuesta altamente ejecutiva, estructurada y natural.\n\n# COMPORTAMIENTO  \nEres profesional, cortés, conciso y evitas el relleno conversacional típico de un chatbot.\n\n# SECCIÓN: GESTIÓN DE CITAS Y RUTEO (SWITCH5)\nAnaliza el mensaje del usuario y clasifícalo en una de las tres categorías disponibles. Debes generar obligatoriamente la respuesta siguiendo estrictamente la estructura del bloque \"FORMATO DE SALIDA OBLIGATORIO\" al final de este prompt.\n\n## REGLAS DE CLASIFICACIÓN (Para la Línea 1):\n1. CONFIRMACION\n\n   - Si el usuario no ha proporcionado los datos(Nombre, Edad, Tratamiento y Horario en que quiere la cita) pedir los datos.\n   - Selecciona esta opción ÚNICAMENTE si el usuario ya proporcionó TODOS los datos requeridos (Nombre, Edad, Tratamiento y Horario) y confirma explícitamente que desea registrar la cita.\n   - Al elegir esta opción, debes extraer e incluir de forma obligatoria los metadatos estructurados (fecha, hora, duracion) antes de tu respuesta humana.\n\n2. CANCELACION\n   - Selecciona esta opción si el usuario solicita explícitamente CANCELAR o anular una cita existente.\n   - Pedir el nombre del paciente y tratamiento de la cita que se quiere cancelar. \n   - Al elegir esta opción, debes extraer de forma obligatoria los metadatos de la cita a anular (fecha, hora).\n\n3. TEXTO_NORMAL\n   - Selecciona esta opción para cualquier otro escenario: saludos, dudas de tratamientos, preguntas de horarios, charla común o cuando el usuario quiere agendar pero TODAVÍA LE FALTAN datos por proporcionar.\n\n# LÓGICA DE CONTEXTO Y RESPUESTA\n\n1. SI EL MENSAJE ES UN SALUDO O ES VAGO (Ej: \"Hola\", \"Información\"):\n   - Ve directo al grano e invita al usuario a conocer los servicios y proporcionale los horarios de atención: Lunes a Viernes: 9 a 15 y de 16 a 18 h. Sabados: 9 a 14 h. Domingo cerrado.\n   - Respuesta obligatoria: \"Bienvenido al canal de la Clínica Dental. Para mostrarte las opciones disponibles, por favor indícame qué tipo de tratamiento estás buscando o si deseas consultar los tratamientos disponibles.\"\n \n\n2. MOSTRAR CATÁLOGO:\n   - Si el cliente pregunta por los tratamientos disponibles, utiliza la herramienta de Google Sheets disponible para extraer y listar los tratamientos utilizando un formato de lista limpia con viñetas.\n\n3. INFORMACIÓN DE LOS TRATAMIENTOS:\n   - Si el cliente requiere más información sobre un tratamiento específico, usa la herramienta para informarle: costo, duración en minutos y especificaciones según los datos del catálogo.\n\n4. DATOS PARA AGENDAR:\n   - Para poder registrar una cita, solicita de forma directa los siguientes datos si no los ha dado: Nombre completo, Edad, Tratamiento, día y Rango horario de preferencia (Ej: 8:45 a 21:00).\n\n5. DATOS PARA CANCELAR:\n   - Para cancelar una cita, solicita amablemente el Nombre completo del paciente asociado a la reserva, junto con la fecha y hora que desea cancelar.\n\n6. FUERA DE CONTEXTO:\n   - Si pregunta algo ajeno a la clínica, responde que solo puedes ayudarle con información de la clínica, tratamientos y agenda.\n\n#ACLARACION SOBRE FECHAS \n- LA FECHA DE HOY ES: {{ $now.setZone('America/Mexico_City').format('YYYY-MM-DD') }}\n- LA FECHA DE MAÑANA ES: {{ $now.setZone('America/Mexico_City').plus({ days:  1 }).format('YYYY-MM-DD') }}\n- LA FECHA DE HOY + 2 DÍAS:  {{ $now.setZone('America/Mexico_City').plus({ days:  2 }).format('YYYY-MM-DD') }}\n- LA FECHA DE HOY + 3 DÍAS: {{ $now.setZone('America/Mexico_City').plus({ days:  3 }).format('YYYY-MM-DD') }}\n- LA FECHA DE HOY + 4 DÍAS: {{ $now.setZone('America/Mexico_City').plus({ days:  4 }).format('YYYY-MM-DD') }}\n- LA FECHA DE HOY + 5 DÍAS: {{ $now.setZone('America/Mexico_City').plus({ days:  5 }).format('YYYY-MM-DD') }}\n- LA FECHA DE HOY + 6 DÍAS: {{ $now.setZone('America/Mexico_City').plus({ days:  6}).format('YYYY-MM-DD') }}\n\nUsa estos días como referencia real para calcular \"mañana\", \"en N días\" o el día de la semana que te pida el paciente\n\n# REGLAS DE NEGOCIO CRÍTICAS\nSOLO puedes confirmar citas si entran exactamente en estos rangos locales de la Ciudad de México:\n- Horarios válidos de la clínica: \n- Lunes a Viernes de 09:00-15:00 y 16:00-18:00\n- Sábados de 09:00–14:00. \n- Domingos cerrado. Valida que la cita caiga en estos rangos.\nSi el usuario te pide una cita a las 15:30 (hora de comida) o un lunes a las 19:00 (ya cerrado), NO generes la etiqueta CONFIRMACION_EXITOSA. Quédate en TEXTO_NORMAL y responde educadamente: \"Lo siento, en ese horario la clínica se encuentra cerrada. Nuestros horarios de atención son...\" y sugiérele el espacio válido más cercano.\n\n- Días prohibidos (No laborables): 1 de enero, 5 de febrero (o su lunes correspondiente), 21 de marzo (o su lunes correspondiente), 1 de mayo, 16 de septiembre, 20 de noviembre (o su lunes correspondiente), 25 de diciembre, 31 de diciembre y los domingos. \n\n# FORMATO DE SALIDA OBLIGATORIO \nDebes responder estructurando tu salida estrictamente bajo uno de los siguientes tres esquemas, respetando las líneas hacia abajo. No uses llaves `{}`, ni bloques de código markdown ```.\n\n---\nSI LA INTENCIÓN ES TEXTO_NORMAL, RESPONDE ASÍ:\nTEXTO_NORMAL\n[Escribe aquí tu respuesta humana, profesional y ejecutiva en español, sin saludos repetitivos]\n\n---\nSI LA INTENCIÓN ES CONFIRMACION, RESPONDE ASÍ (Extrae los datos de la conversación):\nCONFIRMACION\nfecha: AAAA-MM-DD\nhora: HH:MM\nduracion: XX\nnombre: [nomobre del paciente]\ntratamiento: [tratameinto elegido por el paciente]\n[Escribe aquí tu respuesta humana confirmando que la cita se está registrando en el sistema]\n\n---\nSI LA INTENCIÓN ES CANCELACION, RESPONDE ASÍ (Extrae los datos de la conversación):\nCANCELACION\nfecha: AAAA-MM-DD\nhora: HH:MM\n[Escribe aquí tu respuesta humana confirmando que se procederá a cancelar ese espacio]"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        -2912,
+        704
+      ],
+      "id": "e39a20a6-c15f-4149-b61b-268055b80c38",
+      "name": "AI Agent",
+      "retryOnFail": true,
+      "waitBetweenTries": 2000
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1.1,
+      "position": [
+        -3056,
+        944
+      ],
+      "id": "a6f16617-4883-4f1b-b02a-4a3a1c27067f",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "F2tgBH1f3dMI8OMD",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $('Telegram Trigger').item.json.message.chat.id }}",
+        "contextWindowLength": 15
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.4,
+      "position": [
+        -2848,
+        960
+      ],
+      "id": "c464e306-786e-423a-a166-47cad204409f",
+      "name": "Simple Memory"
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Usa el documento servicios clinica para consultar y proveer el catalogo de tratamientos, costo, duracion y especificaciones",
+        "documentId": {
+          "__rl": true,
+          "value": "176crScg-rQRdUTYzFhctm_T0p2XVOunhsPWY5Ff6r0A",
+          "mode": "list",
+          "cachedResultName": "Servicios clinica",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/176crScg-rQRdUTYzFhctm_T0p2XVOunhsPWY5Ff6r0A/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Hoja 1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/176crScg-rQRdUTYzFhctm_T0p2XVOunhsPWY5Ff6r0A/edit#gid=0"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheetsTool",
+      "typeVersion": 4.7,
+      "position": [
+        -2544,
+        1120
+      ],
+      "id": "4a14f4a2-bf67-4c22-bcb7-bd141c88e83b",
+      "name": "servicios clinica",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "sSCx7cTeFy8fsPUw",
+          "name": "Google Sheets OAuth2 API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.tipo }}",
+                    "rightValue": "confirmacion",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "e03e784a-fd22-48b7-adc6-f31dbb116b69"
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "c6e4b31e-4783-4147-b429-df9f2a273298",
+                    "leftValue": "={{ $json.tipo }}",
+                    "rightValue": "texto_normal",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "1704c824-1963-42fb-8ab2-5e7969f6d08a",
+                    "leftValue": "={{ $json.tipo }}",
+                    "rightValue": "cancelacion",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        -2288,
+        688
+      ],
+      "id": "ab352cb2-1eb4-47a9-8f22-fb76222abbb2",
+      "name": "Switch"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "12d96f94-f785-40d4-8961-762b3bc0faa6",
+              "name": "=tipo",
+              "value": "={{ $json.output.split('\\n')[0].trim().toLowerCase() }}",
+              "type": "string"
+            },
+            {
+              "id": "1cacb692-467c-403a-a675-08ddd3acbaa7",
+              "name": "contenido_original",
+              "value": "={{ $json.output.split('\\n').slice(1).join('\\n').trim() }}",
+              "type": "string"
+            },
+            {
+              "id": "9c3d7c46-70b0-4873-8b47-c77ce9f83e50",
+              "name": "=nombre",
+              "value": "={{ $json.output.match(/nombre:\\s*([^\\n]+)/i)?.[1]?.trim() || \"Paciente\" }}",
+              "type": "string"
+            },
+            {
+              "id": "8de6424f-7e92-443b-8166-74b2864d4e55",
+              "name": "tratamiento",
+              "value": "={{ $json.output.match(/tratamiento:\\s*([^\\n]+)/i)?.[1]?.trim() || \"Consulta General\" }}",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -2512,
+        704
+      ],
+      "id": "a87a6039-d19b-4311-9c60-1c427553717d",
+      "name": "tipo evento 1"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Telegram Trigger').item.json.message.chat.id }}",
+        "text": "={{ $json.output }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        720,
+        592
+      ],
+      "id": "64d941b9-69f2-408f-89c5-1a54739b9b9d",
+      "name": "Send a text message",
+      "webhookId": "52d0f45b-ce4f-4573-bc5c-d6dc3958b700",
+      "credentials": {
+        "telegramApi": {
+          "id": "fXARzggL5OraQ4Kd",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "e6f656c4-4457-43a7-9fd9-a2dae7a2f36b",
+              "name": "=fecha",
+              "value": "={{ $json.output.match(/fecha:\\s*(\\d{4}-\\d{2}-\\d{2})/)[1] }}",
+              "type": "string"
+            },
+            {
+              "id": "321e4324-e886-4de3-a273-1177660ee806",
+              "name": "=hora_inicio",
+              "value": "={{ $json.output.match(/hora:\\s*(\\d{2}:\\d{2})/)[1] }}",
+              "type": "string"
+            },
+            {
+              "id": "35b9fec9-b4c9-4f63-befc-e39019775c7b",
+              "name": "=duracion",
+              "value": "={{ $json.output.match(/duracion:\\s*(\\d+)/)[1] }}",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -2000,
+        416
+      ],
+      "id": "677430aa-6c9d-4c81-aacc-319680837035",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "let horaInicio = $json.hora_inicio;\nlet duracionMin = parseInt($json.duracion || 0);\n\nlet [horas, minutos] = horaInicio.split(':').map(Number);\n\nminutos += duracionMin;\n\nif (minutos >= 60) {\n    horas += Math.floor(minutos / 60);\n    minutos = minutos % 60;\n}\n\nif (horas >= 24) {\n    horas = horas % 24;\n}\n\nconst horaFin = `${String(horas).padStart(2, '0')}:${String(minutos).padStart(2, '0')}`;\n\nreturn {\n    ...$json,\n    hora_fin: horaFin\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1760,
+        400
+      ],
+      "id": "6a8ad8fe-1f04-4997-9e24-d0dd8f1fee68",
+      "name": "Calcular Hora fin"
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "calendar": {
+          "__rl": true,
+          "value": "d71f74ed69d4da0a0a55d02bbee303516f4abf1431b916d87c5387097001d989@group.calendar.google.com",
+          "mode": "list",
+          "cachedResultName": "Citas clinica dental"
+        },
+        "timeMin": "={{ $json.fecha }}T{{ $json.hora_inicio }}:00",
+        "timeMax": "={{ $json.fecha }}T{{ $json.hora_fin }}:00",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleCalendar",
+      "typeVersion": 1.3,
+      "position": [
+        -1440,
+        320
+      ],
+      "id": "99134735-9f71-41d6-987b-e99870b7031b",
+      "name": "Get many events",
+      "alwaysOutputData": true,
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "YJTg5KZlLBo2bMd9",
+          "name": "Google Calendar OAuth2 API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// 1. Obtenemos el resultado de la búsqueda del calendario (la lista de eventos)\nconst items = $input.all();\n\n// 2. Traemos los datos originales usando la sintaxis moderna de n8n\n// Reemplaza \"Calcular Hora fin\" por el nombre exacto de tu nodo si cambia en algo\nconst datosPaciente = $(\"Calcular Hora fin\").first().json;\n\n// 3. Verificamos si Google Calendar encontró algún evento real con ID\nconst hayEvento = items.some(i => i.json && i.json.id);\n\n// 4. Devolvemos el JSON con la bandera de disponibilidad\nreturn [{\n    json: {\n        ...datosPaciente,\n        disponible: !hayEvento\n    }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1232,
+        320
+      ],
+      "id": "e724cfcd-4f68-4c86-b751-a59af928b20c",
+      "name": "contar diponibilidad"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "b1f62f8d-4338-4bcc-b56e-e4e49b0c5361",
+              "leftValue": "={{ $json.disponible }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "or"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -880,
+        320
+      ],
+      "id": "ceb38947-d75d-47f3-953d-746ffde9659d",
+      "name": "Evaluar disponibilidad"
+    },
+    {
+      "parameters": {
+        "calendar": {
+          "__rl": true,
+          "value": "d71f74ed69d4da0a0a55d02bbee303516f4abf1431b916d87c5387097001d989@group.calendar.google.com",
+          "mode": "list",
+          "cachedResultName": "Citas clinica dental"
+        },
+        "start": "={{ $json.fecha }}T{{ $json.hora_inicio }}:00",
+        "end": "={{ $json.fecha }}T{{ $json.hora_fin }}:00",
+        "additionalFields": {
+          "description": "=Paciente: {{ $(\"tipo evento 1\").item.json.nombre }}\nServicio: {{ $(\"tipo evento 1\").item.json.tratamiento }}\nID: {{ $(\"Telegram Trigger\").first().json.message.from.id }}",
+          "summary": "=Cita: {{ $(\"tipo evento 1\").first().json.tratamiento }} - {{ $(\"tipo evento 1\").first().json.nombre }}"
+        }
+      },
+      "type": "n8n-nodes-base.googleCalendar",
+      "typeVersion": 1.3,
+      "position": [
+        -576,
+        160
+      ],
+      "id": "d7a4477c-6937-49ec-82aa-65ec5dfe578f",
+      "name": "Crear evento",
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "YJTg5KZlLBo2bMd9",
+          "name": "Google Calendar OAuth2 API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.id }}",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "string",
+                      "operation": "notEmpty",
+                      "singleValue": true
+                    },
+                    "id": "1e955648-e0f4-45a6-9734-c327e1f96a91"
+                  }
+                ],
+                "combinator": "and"
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        -304,
+        80
+      ],
+      "id": "b3a66b48-715b-4978-9d64-41420fb0cc53",
+      "name": "cita creada con exito?"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1woq9H0AG8s52lk39LtfuMyZRdOcHOU_6yruJOTLGiY4",
+          "mode": "list",
+          "cachedResultName": "Registrar cita",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1woq9H0AG8s52lk39LtfuMyZRdOcHOU_6yruJOTLGiY4/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Hoja 1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1woq9H0AG8s52lk39LtfuMyZRdOcHOU_6yruJOTLGiY4/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Nombre": "={{ $('Edit Fields').item.json.nombre }}",
+            "tratamiento": "={{ $('tipo evento 1').item.json.tratamiento }}",
+            "Estado": "=confirmado",
+            "Inicio": "={{ $('Calcular Hora fin').item.json.hora_inicio }}",
+            "  Fin": "={{ $('Calcular Hora fin').item.json.hora_fin }}",
+            "TelegramID": "={{ $('Telegram Trigger').item.json.message.chat.id }}",
+            "EventID": "={{ $json.id }}",
+            "Registrado / Cancelado": "={{ $now.setZone('America/Mexico_City').format('YYYY-MM-DD HH:mm') }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Nombre",
+              "displayName": "Nombre",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "tratamiento",
+              "displayName": "tratamiento",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Inicio",
+              "displayName": "Inicio",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "  Fin",
+              "displayName": "  Fin",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Estado",
+              "displayName": "Estado",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "EventID",
+              "displayName": "EventID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "TelegramID",
+              "displayName": "TelegramID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Registrado / Cancelado",
+              "displayName": "Registrado / Cancelado",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        0,
+        0
+      ],
+      "id": "9b9fc9d9-480d-4947-89bc-4637c172ca8b",
+      "name": "registrar cita",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "sSCx7cTeFy8fsPUw",
+          "name": "Google Sheets OAuth2 API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "88e9108a-e943-4602-90f8-84a785723e12",
+              "name": "tipo",
+              "value": "ocupado",
+              "type": "string"
+            },
+            {
+              "id": "e98da011-6ad0-45c1-acc6-1b17fe802cc8",
+              "name": "output",
+              "value": "=Lo siento, el horario seleccionado ya se encuentra ocupado por otro paciente o no está disponible. Por favor, indícame otro día o un rango de horario diferente para verificar los espacios libres en la clínica.",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -528,
+        400
+      ],
+      "id": "2b733505-ca34-48ce-9c0a-cad79357e5c8",
+      "name": "error agendar"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "42518019-79a5-4d72-80f8-889b6df138b6",
+              "name": "tipo",
+              "value": "confirmado ",
+              "type": "string"
+            },
+            {
+              "id": "dd0251f0-ccc2-4a2a-9a46-5c87ce5b24ee",
+              "name": "=output",
+              "value": "={{ $(\"tipo evento 1\").first().json.output.split('\\n').slice(5).join('\\n').trim() }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        288,
+        0
+      ],
+      "id": "60c6972e-72b2-443a-b65f-9f6073ebf5ff",
+      "name": "agenda_confirmada"
+    },
+    {
+      "parameters": {
+        "jsCode": "// 1. Jalamos de forma segura el texto que viene del AI Agent\nconst datosAgente = $(\"AI Agent\").first().json;\nconst texto = datosAgente.output || \"\";\n\n// 2. Extraemos los datos que el usuario nos dio para cancelar con Expresiones Regulares\nconst matchFecha = texto.match(/fecha:\\s*([\\d-]+)/i);\nconst matchHora = texto.match(/hora:\\s*([\\d:]+)/i);\n\n// Si por alguna razón el agente no los capturó, ponemos valores por defecto para que no truene\nconst fecha = matchFecha ? matchFecha[1].trim() : \"\";\nconst hora = matchHora ? matchHora[1].trim() : \"\";\n\nif (!fecha || !hora) {\n    throw new Error(\"No se pudo extraer la fecha o la hora del mensaje de cancelación.\");\n}\n\n// 3. Creamos el objeto de fecha base combinando Año-Mes-Día + Hora\nconst fechaBase = new Date(`${fecha}T${hora}:00`);\n\n// 4. CALCULAMOS LA VENTANA DE ±3 HORAS (6 horas en total)\nconst tresHorasEnMilisegundos = 3 * 60 * 60 * 1000;\n\nconst tiempoAfter = new Date(fechaBase.getTime() - tresHorasEnMilisegundos);\nconst tiempoBefore = new Date(fechaBase.getTime() + tresHorasEnMilisegundos);\n\n// 5. Convertimos a formato ISO pero manteniendo la zona horaria local de México (restando 6 horas del UTC)\nconst formatISO = (date) => {\n    return date.toISOString().replace('Z', '-06:00');\n};\n\nconst afterStr = formatISO(tiempoAfter);\nconst beforeStr = formatISO(tiempoBefore);\n\n// 6. Devolvemos los datos listos para el nodo de Google Calendar (Get many events)\nreturn [{\n    json: {\n        fecha,\n        hora,\n        after: afterStr,\n        before: beforeStr,\n        timeZone: \"America/Mexico_City\"\n    }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -2000,
+        960
+      ],
+      "id": "05dafeff-2f68-4865-a84c-6b9f034603bd",
+      "name": "buscar cita cancelar"
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "calendar": {
+          "__rl": true,
+          "value": "d71f74ed69d4da0a0a55d02bbee303516f4abf1431b916d87c5387097001d989@group.calendar.google.com",
+          "mode": "list",
+          "cachedResultName": "Citas clinica dental"
+        },
+        "timeMin": "={{ $json.after }}",
+        "timeMax": "={{ $json.before }}",
+        "options": {
+          "timeZone": {
+            "__rl": true,
+            "value": "America/Mexico_City",
+            "mode": "list",
+            "cachedResultName": "America/Mexico_City"
+          }
+        }
+      },
+      "type": "n8n-nodes-base.googleCalendar",
+      "typeVersion": 1.3,
+      "position": [
+        -1792,
+        960
+      ],
+      "id": "e65cd45d-46c5-4e73-a2f5-bd27f4191565",
+      "name": "Get many events1",
+      "alwaysOutputData": true,
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "YJTg5KZlLBo2bMd9",
+          "name": "Google Calendar OAuth2 API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "delete",
+        "calendar": {
+          "__rl": true,
+          "value": "d71f74ed69d4da0a0a55d02bbee303516f4abf1431b916d87c5387097001d989@group.calendar.google.com",
+          "mode": "list",
+          "cachedResultName": "Citas clinica dental"
+        },
+        "eventId": "={{ $json.id }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleCalendar",
+      "typeVersion": 1.3,
+      "position": [
+        -1248,
+        912
+      ],
+      "id": "20369dd6-1e74-4596-9919-000beff3f524",
+      "name": "borrar cita",
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "YJTg5KZlLBo2bMd9",
+          "name": "Google Calendar OAuth2 API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "1woq9H0AG8s52lk39LtfuMyZRdOcHOU_6yruJOTLGiY4",
+          "mode": "list",
+          "cachedResultName": "Registrar cita",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1woq9H0AG8s52lk39LtfuMyZRdOcHOU_6yruJOTLGiY4/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Hoja 1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1woq9H0AG8s52lk39LtfuMyZRdOcHOU_6yruJOTLGiY4/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "EventID": "={{ $(\"validacion id chat1\").item.json.id }}",
+            "Estado": "Cancelada",
+            "Registrado / Cancelado": "={{ $now.setZone('America/Mexico_City').toFormat('yyyy-MM-dd HH:mm') }}"
+          },
+          "matchingColumns": [
+            "EventID"
+          ],
+          "schema": [
+            {
+              "id": "Nombre",
+              "displayName": "Nombre",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "tratamiento",
+              "displayName": "tratamiento",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Inicio",
+              "displayName": "Inicio",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "  Fin",
+              "displayName": "  Fin",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Estado",
+              "displayName": "Estado",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "EventID",
+              "displayName": "EventID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "TelegramID",
+              "displayName": "TelegramID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Registrado / Cancelado",
+              "displayName": "Registrado / Cancelado",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "row_number",
+              "displayName": "row_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "readOnly": true,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -608,
+        1040
+      ],
+      "id": "f69fb42d-6275-40fb-8b12-708e80efb08b",
+      "name": "Actualizar cita",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "sSCx7cTeFy8fsPUw",
+          "name": "Google Sheets OAuth2 API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "aa66f40b-4a02-41ca-b456-05bcf330f7df",
+              "name": "tipo",
+              "value": "cancelado",
+              "type": "string"
+            },
+            {
+              "id": "323c7129-14d3-4dce-8c6b-7a273fe9423d",
+              "name": "=output",
+              "value": "={{ $(\"AI Agent\").first().json.output }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -400,
+        1040
+      ],
+      "id": "464feb8a-eede-44e2-9fdb-5dfa4f7be553",
+      "name": "mensaje cancela"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "0522a17a-5297-4a57-ada6-652526b5531d",
+              "name": "output",
+              "value": "Lo lamento, no pude encontrar una cita activa con tus datos o hubo un problema al procesar la cancelación. ¿Te gustaría que intentemos con un horario diferente para programar una nueva?",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -672,
+        1488
+      ],
+      "id": "14384584-6b84-4335-bcd4-282b3d954e89",
+      "name": "error cancelacion"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "b18666a4-6061-4278-80b9-1af9d3d0ec21",
+              "leftValue": "={{ $json.description ?? '' }}",
+              "rightValue": "={{ $(\"Telegram Trigger\").first().json.message.from.id }}",
+              "operator": {
+                "type": "string",
+                "operation": "contains"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -1536,
+        960
+      ],
+      "id": "6d7e0f8a-68ca-4f53-832d-0503af5e49eb",
+      "name": "validacion id chat1"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "7da38039-be22-4537-afdf-cd7a3774a57a",
+              "leftValue": "={{ $(\"borrar cita\").item?.json.success }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -928,
+        1088
+      ],
+      "id": "992cbac1-8ae0-4266-9649-5404d2c46cb0",
+      "name": "confirmacion borrado1"
+    },
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "triggerOn": "specificFolder",
+        "folderToWatch": {
+          "__rl": true,
+          "value": "18mGKsBZHNsRDM-bf49VThNAuNT-FVMtn",
+          "mode": "list",
+          "cachedResultName": "Clinica_dental",
+          "cachedResultUrl": "https://drive.google.com/drive/folders/18mGKsBZHNsRDM-bf49VThNAuNT-FVMtn"
+        },
+        "event": "fileCreated",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDriveTrigger",
+      "typeVersion": 1,
+      "position": [
+        -3728,
+        1536
+      ],
+      "id": "3ff48bfb-5df7-4f57-a5b8-19efc7356603",
+      "name": "Trigger Drive carpeta",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "kpE589VIUIgx75eC",
+          "name": "Google Drive OAuth2 API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "download",
+        "fileId": {
+          "__rl": true,
+          "value": "={{ $json.id }}",
+          "mode": "id"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        -3424,
+        1536
+      ],
+      "id": "592ede7f-6347-4abc-bc99-c4a16727e4cc",
+      "name": "Descargar file",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "kpE589VIUIgx75eC",
+          "name": "Google Drive OAuth2 API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "dataType": "binary",
+        "textSplittingMode": "custom",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.documentDefaultDataLoader",
+      "typeVersion": 1.1,
+      "position": [
+        -2960,
+        1808
+      ],
+      "id": "860eb28c-d43b-48f1-b93e-8129277acb5e",
+      "name": "Default Data Loader"
+    },
+    {
+      "parameters": {
+        "mode": "insert",
+        "memoryKey": {
+          "__rl": true,
+          "mode": "list",
+          "value": "vector_store_key"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreInMemory",
+      "typeVersion": 1.3,
+      "position": [
+        -3136,
+        1552
+      ],
+      "id": "e14872ce-486b-4b9b-a4bf-7c8a791dfbbe",
+      "name": "Simple Vector Store"
+    },
+    {
+      "parameters": {},
+      "type": "@n8n/n8n-nodes-langchain.embeddingsGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        -3344,
+        1840
+      ],
+      "id": "0fb67b2d-bcd8-4914-8005-a34e018e601b",
+      "name": "Embeddings Google Gemini",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "F2tgBH1f3dMI8OMD",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chunkSize": 300,
+        "chunkOverlap": 50,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.textSplitterRecursiveCharacterTextSplitter",
+      "typeVersion": 1,
+      "position": [
+        -2912,
+        1952
+      ],
+      "id": "a3c1224e-fd2a-4cfb-8dc2-96700bc928da",
+      "name": "Recursive Character Text Splitter"
+    },
+    {
+      "parameters": {
+        "mode": "retrieve-as-tool",
+        "toolDescription": "Utiliza esta herramienta únicamente cuando el paciente o usuario haga preguntas sobre las políticas de la clínica, reglas de cancelación de citas médicas, reembolsos de dinero, penalizaciones por inasistencia, tolerancias de tiempo o qué pasa si llega tarde a su consulta. Esta herramienta buscará en la base de datos vectorial para extraer los fragmentos de información exactos y vigentes de la clínica.",
+        "memoryKey": {
+          "__rl": true,
+          "mode": "list",
+          "value": "vector_store_key"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreInMemory",
+      "typeVersion": 1.3,
+      "position": [
+        -2656,
+        1584
+      ],
+      "id": "4874d81f-0ce7-48ed-8cdf-749f89c1c9c0",
+      "name": "Simple Vector Store1"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields 1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields 1": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "tipo evento 1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "servicios clinica": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "tipo evento 1": {
+      "main": [
+        [
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send a text message",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "buscar cita cancelar",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "Calcular Hora fin",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Calcular Hora fin": {
+      "main": [
+        [
+          {
+            "node": "Get many events",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get many events": {
+      "main": [
+        [
+          {
+            "node": "contar diponibilidad",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "contar diponibilidad": {
+      "main": [
+        [
+          {
+            "node": "Evaluar disponibilidad",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Evaluar disponibilidad": {
+      "main": [
+        [
+          {
+            "node": "Crear evento",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "error agendar",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Crear evento": {
+      "main": [
+        [
+          {
+            "node": "cita creada con exito?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "cita creada con exito?": {
+      "main": [
+        [
+          {
+            "node": "registrar cita",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "registrar cita": {
+      "main": [
+        [
+          {
+            "node": "agenda_confirmada",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "error agendar": {
+      "main": [
+        [
+          {
+            "node": "Send a text message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "agenda_confirmada": {
+      "main": [
+        [
+          {
+            "node": "Send a text message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "buscar cita cancelar": {
+      "main": [
+        [
+          {
+            "node": "Get many events1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get many events1": {
+      "main": [
+        [
+          {
+            "node": "validacion id chat1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "borrar cita": {
+      "main": [
+        [
+          {
+            "node": "confirmacion borrado1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Actualizar cita": {
+      "main": [
+        [
+          {
+            "node": "mensaje cancela",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "mensaje cancela": {
+      "main": [
+        [
+          {
+            "node": "Send a text message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "validacion id chat1": {
+      "main": [
+        [
+          {
+            "node": "borrar cita",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "error cancelacion",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "error cancelacion": {
+      "main": [
+        [
+          {
+            "node": "Send a text message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "confirmacion borrado1": {
+      "main": [
+        [
+          {
+            "node": "Actualizar cita",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "error cancelacion",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Trigger Drive carpeta": {
+      "main": [
+        [
+          {
+            "node": "Descargar file",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Descargar file": {
+      "main": [
+        [
+          {
+            "node": "Simple Vector Store",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Default Data Loader": {
+      "ai_document": [
+        [
+          {
+            "node": "Simple Vector Store",
+            "type": "ai_document",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embeddings Google Gemini": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Simple Vector Store",
+            "type": "ai_embedding",
+            "index": 0
+          },
+          {
+            "node": "Simple Vector Store1",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Recursive Character Text Splitter": {
+      "ai_textSplitter": [
+        [
+          {
+            "node": "Default Data Loader",
+            "type": "ai_textSplitter",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Vector Store1": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "4a8c7e20-d56e-4f62-896e-edb564f9838b",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "04e859c8c8137f42b7bdced330e47a75a81cb337d1cfc4f430ffe3b96e3a4f1e"
+  },
+  "nodeGroups": [],
+  "id": "aBLS304sMaKejkY8",
+  "tags": []
+}
