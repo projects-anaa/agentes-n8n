@@ -8,7 +8,7 @@ Sistema automatizado basado en inteligencia artificial agentiva montado en n8n p
 - Telegram API: interfaz y canal de comunicación con el usuario final.
 - Google sheets API: Almacenamiento de citas y servicios de la clínica.
 - Google calendar API: Agendamiento de citas en el calendario del dentista.
-- Google drive API: Permite disparar el flujo automáticamente mediante un Trigger que vigila una carpeta de drive y cuando se   detecta un nuevo documento de políticas y lo descargar en tiempo real.
+- Google drive API: Permite disparar el flujo automáticamente mediante un trigger que vigila una carpeta de drive y cuando se   detecta un nuevo documento de políticas lo descarga en tiempo real.
 - Google gemini 3 flash: LLM para conversar con el usuario final.
 - Embeddings google: Modelo que extrae y convierte el texto en vectores.
 - Simple Vector Store: Base de datos vectorial indexada en memoria que almacena los vectores generados y expone una herramienta para que el Agente de IA realice búsquedas semánticas rápidas durante la conversación.
